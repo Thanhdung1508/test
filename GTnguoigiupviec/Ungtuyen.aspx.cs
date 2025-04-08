@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Data.SqlClient;
 using System.Data;
-using System.Linq;
-using System.Web;
+using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -17,6 +14,7 @@ namespace GTnguoigiupviec
             if (!IsPostBack)
                 LoadDanhSachBaiDang();
         }
+
         private void LoadDanhSachBaiDang()
         {
             string connStr = ConfigurationManager.ConnectionStrings["connStr"].ConnectionString;
@@ -31,16 +29,16 @@ namespace GTnguoigiupviec
             }
         }
 
-        protected void gvBaiDang_RowCommand(object sender, System.Web.UI.WebControls.GridViewCommandEventArgs e)
+        protected void gvBaiDang_RowCommand(object sender, GridViewCommandEventArgs e)
         {
             if (e.CommandName == "UngTuyen")
             {
                 string maBD = e.CommandArgument.ToString();
-                string maNGV = Session["maNGV"]?.ToString(); // Đăng nhập rồi thì lưu trong session
+                string maNGV = Session["maNGV"]?.ToString();
 
                 if (string.IsNullOrEmpty(maNGV))
                 {
-                    Response.Write("<script>alert('Bạn cần đăng nhập với tư cách người giúp việc.');</script>");
+                    ShowAlert("Bạn cần đăng nhập với tư cách người giúp việc.");
                     return;
                 }
 
@@ -49,7 +47,7 @@ namespace GTnguoigiupviec
                 {
                     conn.Open();
 
-                    // Kiểm tra nếu đã ứng tuyển
+                   
                     string checkSql = "SELECT COUNT(*) FROM UngTuyen WHERE maBD = @maBD AND maNGV = @maNGV";
                     SqlCommand checkCmd = new SqlCommand(checkSql, conn);
                     checkCmd.Parameters.AddWithValue("@maBD", maBD);
@@ -58,13 +56,14 @@ namespace GTnguoigiupviec
 
                     if (exists > 0)
                     {
-                        Response.Write("<script>alert('Bạn đã ứng tuyển bài đăng này trước đó.');</script>");
+                        ShowAlert("Bạn đã ứng tuyển bài đăng này trước đó.");
                         return;
                     }
 
-                    // Tạo mã ứng tuyển
+                
                     string maUT = "UT" + DateTime.Now.Ticks.ToString().Substring(10);
-                    string insertSql = "INSERT INTO UngTuyen (maUngTuyen, maBD, maNGV, ngayUngTuyen, trangThai) VALUES (@maUT, @maBD, @maNGV, GETDATE(), N'Chờ duyệt')";
+                    string insertSql = "INSERT INTO UngTuyen (maUngTuyen, maBD, maNGV, ngayUngTuyen, trangThai) " +
+                                       "VALUES (@maUT, @maBD, @maNGV, GETDATE(), N'Chờ duyệt')";
 
                     SqlCommand cmd = new SqlCommand(insertSql, conn);
                     cmd.Parameters.AddWithValue("@maUT", maUT);
@@ -72,10 +71,15 @@ namespace GTnguoigiupviec
                     cmd.Parameters.AddWithValue("@maNGV", maNGV);
                     cmd.ExecuteNonQuery();
 
-                    Response.Write("<script>alert('Ứng tuyển thành công!');</script>");
+                    ShowAlert("Ứng tuyển thành công!");
                 }
             }
+        }
 
+        private void ShowAlert(string message)
+        {
+            ScriptManager.RegisterStartupScript(this, GetType(), "alertMessage",
+                $"alert('{message}');", true);
         }
     }
-} 
+}
